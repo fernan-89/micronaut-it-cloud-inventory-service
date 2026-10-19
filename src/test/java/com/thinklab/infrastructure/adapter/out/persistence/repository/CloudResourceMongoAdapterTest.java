@@ -12,6 +12,7 @@ import com.mongodb.reactivestreams.client.MongoDatabase;
 import com.thinklab.domain.exception.DuplicateResourceException;
 import com.thinklab.domain.model.CloudResource;
 import com.thinklab.domain.model.CloudResource.Kind;
+import com.thinklab.domain.model.CloudResource.Presence;
 import com.thinklab.domain.model.CloudResource.Provider;
 import com.thinklab.domain.model.CloudResource.State;
 import com.thinklab.infrastructure.adapter.out.persistence.entity.CloudResourceDocument;
@@ -191,5 +192,26 @@ class CloudResourceMongoAdapterTest {
         assertTrue(full.contains("accountId") && full.contains("provider") && full.contains("kind") && full.contains("region") && full.contains("state"));
         verify(publisher).limit(5);
         verify(publisher).limit(7);
+    }
+
+    @Test
+    @DisplayName("the presence is asked of the store: missing is not terminated and seen before the moment, present is not terminated and seen then or later, gone is terminated")
+    void presenceInTheStore() {
+        finds(resource());
+        CloudResourceMongoRepositoryAdapter adapter = new CloudResourceMongoRepositoryAdapter(client, URI);
+        Instant cutoff = Instant.parse("2026-10-08T12:00:00Z");
+
+        StepVerifier.create(adapter.findAll(tenant, null, null, null, null, null, Presence.MISSING, cutoff, 5)).expectNextCount(1).verifyComplete();
+        StepVerifier.create(adapter.findAll(tenant, null, null, null, null, null, Presence.PRESENT, cutoff, 5)).expectNextCount(1).verifyComplete();
+        StepVerifier.create(adapter.findAll(tenant, null, null, null, null, null, Presence.GONE, cutoff, 5)).expectNextCount(1).verifyComplete();
+
+        ArgumentCaptor<Bson> filter = ArgumentCaptor.forClass(Bson.class);
+        verify(collection, org.mockito.Mockito.times(3)).find(filter.capture());
+        String missing = filter.getAllValues().get(0).toString();
+        assertTrue(missing.contains("$ne") && missing.contains("TERMINATED") && missing.contains("$lt") && missing.contains("lastSeenAt"));
+        String present = filter.getAllValues().get(1).toString();
+        assertTrue(present.contains("$ne") && present.contains("TERMINATED") && present.contains("$gte") && present.contains("lastSeenAt"));
+        String gone = filter.getAllValues().get(2).toString();
+        assertTrue(gone.contains("TERMINATED") && !gone.contains("$ne") && !gone.contains("lastSeenAt"));
     }
 }

@@ -153,22 +153,21 @@ class CloudInventoryUseCasesTest {
     }
 
     @Test
-    @DisplayName("the list is limited (100 unless asked, at most 500, at least 1) and filtered by how the resources are judged")
+    @DisplayName("the list is limited (100 unless asked, at most 500, at least 1) and the presence is asked of the store, with the moment before which a resource is missing")
     void list() {
         CloudResource fresh = stored(NOW.minusSeconds(60), State.RUNNING);
-        CloudResource missing = stored(NOW.minusSeconds(100 * 3600L), State.RUNNING);
-        CloudResource gone = stored(NOW.minusSeconds(60), State.TERMINATED);
-        when(repository.findAll(eq(org), any(), any(), any(), any(), any(), anyInt())).thenReturn(Flux.just(fresh, missing, gone));
+        Instant cutoff = NOW.minusSeconds(48 * 3600L);
+        when(repository.findAll(eq(org), any(), any(), any(), any(), any(), any(), any(), anyInt())).thenReturn(Flux.just(fresh));
         RetrieveResourcesUseCase list = new RetrieveResourcesUseCase(repository, judge);
 
-        StepVerifier.create(list.execute(org, null, null, null, null, null, null, null, STAFF)).expectNextCount(3).verifyComplete();
-        verify(repository).findAll(org, null, null, null, null, null, 100);
-        StepVerifier.create(list.execute(org, account, Provider.AWS, Kind.COMPUTE, "us-east-1", State.RUNNING, null, 9999, STAFF)).expectNextCount(3).verifyComplete();
-        verify(repository).findAll(org, account, Provider.AWS, Kind.COMPUTE, "us-east-1", State.RUNNING, 500);
+        StepVerifier.create(list.execute(org, null, null, null, null, null, null, null, STAFF)).expectNextCount(1).verifyComplete();
+        verify(repository).findAll(org, null, null, null, null, null, null, cutoff, 100);
+        StepVerifier.create(list.execute(org, account, Provider.AWS, Kind.COMPUTE, "us-east-1", State.RUNNING, null, 9999, STAFF)).expectNextCount(1).verifyComplete();
+        verify(repository).findAll(org, account, Provider.AWS, Kind.COMPUTE, "us-east-1", State.RUNNING, null, cutoff, 500);
         StepVerifier.create(list.execute(org, null, null, null, null, null, null, 0, STAFF)).expectNextCount(1).verifyComplete();
-        StepVerifier.create(list.execute(org, null, null, null, null, null, Presence.MISSING, 10, STAFF)).assertNext(found -> assertEquals("MISSING", found.presence())).verifyComplete();
-        verify(repository).findAll(org, null, null, null, null, null, 500);
-        StepVerifier.create(list.execute(org, null, null, null, null, null, Presence.GONE, 10, STAFF)).expectNextCount(1).verifyComplete();
+        verify(repository).findAll(org, null, null, null, null, null, null, cutoff, 1);
+        StepVerifier.create(list.execute(org, null, null, null, null, null, Presence.MISSING, 10, STAFF)).expectNextCount(1).verifyComplete();
+        verify(repository).findAll(org, null, null, null, null, null, Presence.MISSING, cutoff, 10);
     }
 
     @Test

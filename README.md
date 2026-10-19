@@ -32,7 +32,7 @@ security on, comes from the verified token.
 |---|---|
 | initiate | `POST /it-cloud-inventory/v1/initiate` `{"accountId":"<uuid>","provider":"AWS","externalId":"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc","name":"web-1","kind":"COMPUTE","region":"us-east-1","state":"RUNNING","tags":{"environment":"prod","owner":"team-a"}}` (201 new, 200 restated) |
 | retrieve | `GET /it-cloud-inventory/v1/{id}/retrieve` (judged now) |
-| retrieve (collection) | `GET /it-cloud-inventory/v1/retrieve?accountId=&provider=&kind=&region=&state=&presence=&limit=` (most recently seen first, 100 unless asked, at most 500) |
+| retrieve (collection) | `GET /it-cloud-inventory/v1/retrieve?accountId=&provider=&kind=&region=&state=&presence=&limit=` (most recently seen first, 100 unless asked, at most 500; `presence` is asked of the store, so a missing resource is found whatever the limit) |
 | summary/retrieve | `GET /it-cloud-inventory/v1/summary/retrieve?provider=` (counts by provider, kind, state and presence, over at most 5,000 resources) |
 
 ```

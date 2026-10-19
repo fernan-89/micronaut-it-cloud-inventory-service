@@ -21,6 +21,11 @@ public class InventoryJudge {
         this.missingAfter = Duration.ofHours(missingAfterHours);
     }
 
+    /** The moment before which a resource last seen is missing (a resource is missing when it was last seen before it). */
+    public Instant missingBefore() {
+        return Instant.now(clock).minus(missingAfter);
+    }
+
     public Presence presenceOf(CloudResource resource) {
         return resource.assess(Instant.now(clock), missingAfter);
     }
