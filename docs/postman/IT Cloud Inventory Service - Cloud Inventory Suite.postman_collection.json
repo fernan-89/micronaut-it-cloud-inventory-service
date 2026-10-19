@@ -1,0 +1,2174 @@
+{
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Automatically generate standard W3C traceparent (ADR-010) and X-Trace-Id",
+          "function generateHex(len) {",
+          "    let result = '';",
+          "    const chars = '0123456789abcdef';",
+          "    for (let i = 0; i < len; i++) {",
+          "        result += chars.charAt(Math.floor(Math.random() * chars.length));",
+          "    }",
+          "    return result;",
+          "}",
+          "const traceId = generateHex(32);",
+          "const spanId = generateHex(16);",
+          "const traceparent = `00-${traceId}-${spanId}-01`;",
+          "pm.request.headers.upsert({ key: 'traceparent', value: traceparent });",
+          "pm.request.headers.upsert({ key: 'X-Trace-Id', value: traceId });",
+          "pm.environment.set('currentTraceId', traceId);"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ],
+  "info": {
+    "_exporter_id": "39879181",
+    "_postman_id": "e5f7a9b1-3d4e-4b6c-8d9e-0f1a2b3c4d05",
+    "description": "Enterprise-grade E2E Postman Suite for the IT Cloud Inventory Service Domain (BIAN-aligned, ADR-001/005/013/019/030/031/032/033/034). The discovery tool reports an AWS or Azure resource (the provider id is its identity: the same one again is 200 with the stored resource restated, a new one is 201), the snapshot is replaced by what the tool says now, the same ARN under another account is another resource, resources are read, listed with every filter and counted by provider, kind, state and presence, and a terminated resource is judged GONE and comes back when reported running. A second folder proves the service is staff only (403 ERR-INV-00403 for a REQUESTER on every route). A third covers the negative guarantees: validation (an unknown provider, kind or state, a provider id with a space or over 300, a name with a space, a region in capitals, a tag key that is not kept, a tag value with a person and an address, more than four tags, missing fields, a malformed account id, missing executor), tenant isolation, unknown filters and the absence of DELETE, with RFC 7807 error_code assertions. It files everything under its own generated tenant id (ciOrganisationId).",
+    "name": "IT Cloud Inventory Service - Cloud Inventory Suite",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "item": [
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Health status is UP', () => pm.expect(pm.response.json().status).to.eql('UP'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "Health Check (Aggregated)",
+          "request": {
+            "header": [],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ],
+              "raw": "{{base_url}}/health"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Liveness status is UP or UNKNOWN (no probe contributors registered)', () => pm.expect(['UP', 'UNKNOWN']).to.include(pm.response.json().status));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "Liveness Probe",
+          "request": {
+            "header": [],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health",
+                "liveness"
+              ],
+              "raw": "{{base_url}}/health/liveness"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Readiness status is UP', () => pm.expect(pm.response.json().status).to.eql('UP'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "Readiness Probe",
+          "request": {
+            "header": [],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health",
+                "readiness"
+              ],
+              "raw": "{{base_url}}/health/readiness"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Contains JVM metrics', () => pm.expect(pm.response.text()).to.include('jvm_memory'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "Prometheus Metrics",
+          "request": {
+            "header": [],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "prometheus"
+              ],
+              "raw": "{{base_url}}/prometheus"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns Swagger UI HTML', () => pm.expect(pm.response.text()).to.include('swagger-ui'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "Swagger UI",
+          "request": {
+            "header": [],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "swagger-ui",
+                "index.html"
+              ],
+              "raw": "{{base_url}}/swagger-ui/index.html"
+            }
+          }
+        }
+      ],
+      "name": "00. Infrastructure & Telemetry"
+    },
+    {
+      "item": [
+        {
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set('ciOrganisationId', pm.variables.replaceIn('{{$guid}}'));",
+                  "pm.environment.set('ciOtherTenantId', pm.variables.replaceIn('{{$guid}}'));",
+                  "pm.environment.set('accountId', pm.variables.replaceIn('{{$guid}}'));",
+                  "pm.environment.set('otherAccountId', pm.variables.replaceIn('{{$guid}}'));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201 Created', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('resourceId', json.id);",
+                  "pm.test('What the tool said, judged PRESENT', () => {",
+                  "    pm.expect(json.id).to.not.be.undefined;",
+                  "    pm.expect(json.provider).to.eql('AWS');",
+                  "    pm.expect(json.externalId).to.eql('arn:aws:ec2:us-east-1:123456789012:instance/i-0abc');",
+                  "    pm.expect(json.kind).to.eql('COMPUTE');",
+                  "    pm.expect(json.region).to.eql('us-east-1');",
+                  "    pm.expect(json.state).to.eql('RUNNING');",
+                  "    pm.expect(json.tags).to.eql({ environment: 'prod', owner: 'team-a' });",
+                  "    pm.expect(json.presence).to.eql('PRESENT');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "01. Report an AWS instance (201, PRESENT, a snapshot of what the tool said)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('The same resource', () => pm.expect(json.id).to.eql(pm.environment.get('resourceId')));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "02. Report it again, the same (200: the same resource, restated)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Replaced, not duplicated', () => {",
+                  "    pm.expect(json.id).to.eql(pm.environment.get('resourceId'));",
+                  "    pm.expect(json.state).to.eql('STOPPED');",
+                  "    pm.expect(json.name).to.eql('web-1b');",
+                  "    pm.expect(json.tags).to.eql({ environment: 'dev' });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "03. Report it again with another state and tags (200: the snapshot is replaced)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1b\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"STOPPED\",\n  \"tags\": {\"environment\": \"dev\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201 Created', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('azureResourceId', json.id);",
+                  "pm.test('Azure, no tags', () => {",
+                  "    pm.expect(json.provider).to.eql('AZURE');",
+                  "    pm.expect(json.tags).to.eql({});",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "04. Report an Azure virtual machine with an Azure resource id and no tags (201)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AZURE\",\n  \"externalId\": \"/subscriptions/0000-1111/resourceGroups/rg1/providers/Microsoft.Compute/virtualMachines/vm1\",\n  \"name\": \"vm1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"brazilsouth\",\n  \"state\": \"RUNNING\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201 Created', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('databaseId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "05. Report a database of the same account (201)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:rds:us-east-1:123456789012:db:orders\",\n  \"name\": \"orders\",\n  \"kind\": \"DATABASE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201 Created', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('Another resource', () => pm.expect(json.id).to.not.eql(pm.environment.get('resourceId')));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "06. Report the same ARN under another account (201: a different resource)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{otherAccountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('The restated snapshot', () => {",
+                  "    pm.expect(json.state).to.eql('STOPPED');",
+                  "    pm.expect(json.presence).to.eql('PRESENT');",
+                  "    pm.expect(new Date(json.lastSeenAt) >= new Date(json.firstSeenAt)).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "07. Retrieve one resource (judged now)",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "{{resourceId}}",
+                "retrieve"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/{{resourceId}}/retrieve"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Four resources', () => pm.expect(pm.response.json()).to.have.lengthOf(4));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "08. List the resources (most recently seen first)",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "retrieve"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/retrieve"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Only the Azure one', () => { pm.expect(json).to.have.lengthOf(1); pm.expect(json[0].provider).to.eql('AZURE'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "09. List by provider",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "retrieve"
+              ],
+              "query": [
+                {
+                  "key": "provider",
+                  "value": "AZURE"
+                }
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/retrieve?provider=AZURE"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Only the database', () => { pm.expect(json).to.have.lengthOf(1); pm.expect(json[0].name).to.eql('orders'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "10. List by account, kind and region",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "retrieve"
+              ],
+              "query": [
+                {
+                  "key": "accountId",
+                  "value": "{{accountId}}"
+                },
+                {
+                  "key": "kind",
+                  "value": "DATABASE"
+                },
+                {
+                  "key": "region",
+                  "value": "us-east-1"
+                }
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/retrieve?accountId={{accountId}}&kind=DATABASE&region=us-east-1"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Only the stopped one', () => pm.expect(pm.response.json()).to.have.lengthOf(1));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "11. List by state",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "retrieve"
+              ],
+              "query": [
+                {
+                  "key": "state",
+                  "value": "STOPPED"
+                }
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/retrieve?state=STOPPED"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('All four', () => pm.expect(pm.response.json()).to.have.lengthOf(4));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "12. List by presence (all are PRESENT)",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "retrieve"
+              ],
+              "query": [
+                {
+                  "key": "presence",
+                  "value": "PRESENT"
+                }
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/retrieve?presence=PRESENT"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Two', () => pm.expect(pm.response.json()).to.have.lengthOf(2));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "13. List with a limit",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "retrieve"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "2"
+                }
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/retrieve?limit=2"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Counted', () => {",
+                  "    pm.expect(json.total).to.eql(4);",
+                  "    pm.expect(json.byProvider).to.eql({ AWS: 3, AZURE: 1 });",
+                  "    pm.expect(json.byKind).to.eql({ COMPUTE: 3, DATABASE: 1 });",
+                  "    pm.expect(json.byState).to.eql({ RUNNING: 3, STOPPED: 1 });",
+                  "    pm.expect(json.byPresence).to.eql({ PRESENT: 4 });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "14. Summary (counts by provider, kind, state and presence)",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "summary",
+                "retrieve"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/summary/retrieve"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('One Azure resource', () => pm.expect(pm.response.json().total).to.eql(1));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "15. Summary of one provider",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "summary",
+                "retrieve"
+              ],
+              "query": [
+                {
+                  "key": "provider",
+                  "value": "AZURE"
+                }
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/summary/retrieve?provider=AZURE"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('GONE', () => { pm.expect(json.id).to.eql(pm.environment.get('databaseId')); pm.expect(json.presence).to.eql('GONE'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "16. Report the database terminated (200: GONE)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:rds:us-east-1:123456789012:db:orders\",\n  \"name\": \"orders\",\n  \"kind\": \"DATABASE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"TERMINATED\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('The database', () => pm.expect(pm.response.json()).to.have.lengthOf(1));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "17. List what is gone",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "retrieve"
+              ],
+              "query": [
+                {
+                  "key": "presence",
+                  "value": "GONE"
+                }
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/retrieve?presence=GONE"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('PRESENT again', () => pm.expect(json.presence).to.eql('PRESENT'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "18. Report the terminated database as running again (200: it comes back)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:rds:us-east-1:123456789012:db:orders\",\n  \"name\": \"orders\",\n  \"kind\": \"DATABASE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        }
+      ],
+      "name": "01. Cloud Resource Lifecycle (BIAN Behavior Qualifiers)"
+    },
+    {
+      "item": [
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 403', () => pm.response.to.have.status(403));",
+                  "const json = pm.response.json();",
+                  "pm.test('RFC 7807 error_code is ERR-INV-00403', () => {",
+                  "    pm.expect(json.status).to.eql(403);",
+                  "    pm.expect(json.error_code).to.eql('ERR-INV-00403');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "19. Report a resource as a REQUESTER (403)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              },
+              {
+                "key": "X-Role",
+                "value": "REQUESTER"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 403', () => pm.response.to.have.status(403));",
+                  "const json = pm.response.json();",
+                  "pm.test('RFC 7807 error_code is ERR-INV-00403', () => {",
+                  "    pm.expect(json.status).to.eql(403);",
+                  "    pm.expect(json.error_code).to.eql('ERR-INV-00403');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "20. Retrieve a resource as a REQUESTER (403)",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Role",
+                "value": "REQUESTER"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "{{resourceId}}",
+                "retrieve"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/{{resourceId}}/retrieve"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 403', () => pm.response.to.have.status(403));",
+                  "const json = pm.response.json();",
+                  "pm.test('RFC 7807 error_code is ERR-INV-00403', () => {",
+                  "    pm.expect(json.status).to.eql(403);",
+                  "    pm.expect(json.error_code).to.eql('ERR-INV-00403');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "21. List resources as a REQUESTER (403)",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Role",
+                "value": "REQUESTER"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "retrieve"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/retrieve"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 403', () => pm.response.to.have.status(403));",
+                  "const json = pm.response.json();",
+                  "pm.test('RFC 7807 error_code is ERR-INV-00403', () => {",
+                  "    pm.expect(json.status).to.eql(403);",
+                  "    pm.expect(json.error_code).to.eql('ERR-INV-00403');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "22. Summary as a REQUESTER (403)",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Role",
+                "value": "REQUESTER"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "summary",
+                "retrieve"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/summary/retrieve"
+            }
+          }
+        }
+      ],
+      "name": "02. Staff Only (REQUESTER refused)"
+    },
+    {
+      "item": [
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "23. Report a resource - An unknown provider (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"GCP\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "24. Report a resource - An unknown kind (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"TOASTER\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "25. Report a resource - An unknown state (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"SLEEPING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "26. Report a resource - A provider id with a space (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"i 0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "27. Report a resource - A provider id longer than 300 (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "28. Report a resource - A name with a space (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web 1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "29. Report a resource - A region in capitals (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"US-EAST\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "30. Report a resource - A tag key that is not kept (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"password\": \"x\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "31. Report a resource - A tag value that is a person and an address (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"owner\": \"Ana <ana@example.com>\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "32. Report a resource - More than four tags (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"a\", \"owner\": \"b\", \"cost-center\": \"c\", \"application\": \"d\", \"other\": \"e\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "33. Report a resource - Missing the account (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "34. Report a resource - Missing the provider id (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "35. Report a resource - Missing the state (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "36. Report a resource - A malformed account id (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"not-a-uuid\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              },
+              {
+                "key": "X-Executor",
+                "value": "steampipe-sync"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "37. Report a resource - Missing X-Executor (400)",
+          "request": {
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"provider\": \"AWS\",\n  \"externalId\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc\",\n  \"name\": \"web-1\",\n  \"kind\": \"COMPUTE\",\n  \"region\": \"us-east-1\",\n  \"state\": \"RUNNING\",\n  \"tags\": {\"environment\": \"prod\", \"owner\": \"team-a\"}\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "initiate"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/initiate"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "const json = pm.response.json();",
+                  "pm.test('RFC 7807 error_code is ERR-INV-00404', () => {",
+                  "    pm.expect(json.status).to.eql(404);",
+                  "    pm.expect(json.error_code).to.eql('ERR-INV-00404');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "38. Retrieve a resource - Non-existent (404)",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "00000000-0000-0000-0000-000000000000",
+                "retrieve"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/00000000-0000-0000-0000-000000000000/retrieve"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+                  "const json = pm.response.json();",
+                  "pm.test('RFC 7807 error_code is ERR-INV-00404', () => {",
+                  "    pm.expect(json.status).to.eql(404);",
+                  "    pm.expect(json.error_code).to.eql('ERR-INV-00404');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "39. Retrieve a resource - Another tenant answers like a missing one (404)",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOtherTenantId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "{{resourceId}}",
+                "retrieve"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/{{resourceId}}/retrieve"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Nothing of ours', () => pm.expect(pm.response.json()).to.have.lengthOf(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "40. List - Another tenant sees none",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOtherTenantId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "retrieve"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/retrieve"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Nothing of ours', () => pm.expect(pm.response.json().total).to.eql(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "41. Summary - Another tenant counts none",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOtherTenantId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "summary",
+                "retrieve"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/summary/retrieve"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "42. List - An unknown presence (400)",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "retrieve"
+              ],
+              "query": [
+                {
+                  "key": "presence",
+                  "value": "LOST"
+                }
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/retrieve?presence=LOST"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "43. List - An unknown provider (400)",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "retrieve"
+              ],
+              "query": [
+                {
+                  "key": "provider",
+                  "value": "GCP"
+                }
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/retrieve?provider=GCP"
+            }
+          }
+        },
+        {
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Not allowed', () => pm.expect([404, 405]).to.include(pm.response.code));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "name": "44. Resources cannot be deleted: no DELETE (404 or 405)",
+          "request": {
+            "header": [
+              {
+                "key": "X-Tenant-Id",
+                "value": "{{ciOrganisationId}}"
+              }
+            ],
+            "method": "DELETE",
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "it-cloud-inventory",
+                "v1",
+                "{{resourceId}}"
+              ],
+              "raw": "{{base_url}}/it-cloud-inventory/v1/{{resourceId}}"
+            }
+          }
+        }
+      ],
+      "name": "03. Negative Tests & Guarantees"
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8113"
+    }
+  ]
+}
