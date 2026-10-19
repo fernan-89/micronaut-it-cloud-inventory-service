@@ -4,6 +4,7 @@ import com.mongodb.reactivestreams.client.MongoClient;
 import com.thinklab.domain.exception.DuplicateResourceException;
 import com.thinklab.domain.model.CloudResource;
 import com.thinklab.domain.model.CloudResource.Kind;
+import com.thinklab.domain.model.CloudResource.Presence;
 import com.thinklab.domain.model.CloudResource.Provider;
 import com.thinklab.domain.model.CloudResource.State;
 import com.thinklab.domain.repository.CloudResourceRepository;
@@ -128,6 +129,25 @@ class CloudInventoryPersistenceIT implements TestPropertyProvider {
         assertEquals(2, resources.findAll(org, null, null, null, "us-east-1", null, 50).count().block());
         assertEquals(1, resources.findAll(org, null, null, null, null, State.STOPPED, 50).count().block());
         assertEquals(2, resources.findAll(org, null, null, null, null, null, 2).count().block());
+    }
+
+    @Test
+    @DisplayName("a missing resource is found even behind more recently seen ones than the limit: the presence is judged in the store, not after the limit")
+    void presenceBeyondTheLimit() {
+        UUID org = UUID.randomUUID();
+        UUID account = UUID.randomUUID();
+        Instant now = Instant.parse("2026-10-10T12:00:00Z");
+        Instant cutoff = now.minus(Duration.ofHours(48));
+        resources.create(newResource(org, account, Provider.AWS, "i-missing", Kind.COMPUTE, "us-east-1", State.RUNNING, now.minus(Duration.ofHours(100)))).block();
+        for (int i = 0; i < 5; i++) {
+            resources.create(newResource(org, account, Provider.AWS, "i-fresh-" + i, Kind.COMPUTE, "us-east-1", State.RUNNING, now.minusSeconds(60 + i))).block();
+        }
+        resources.create(newResource(org, account, Provider.AWS, "i-gone", Kind.COMPUTE, "us-east-1", State.TERMINATED, now.minus(Duration.ofHours(200)))).block();
+
+        assertEquals(List.of("i-missing"), resources.findAll(org, null, null, null, null, null, Presence.MISSING, cutoff, 2).map(CloudResource::getExternalId).collectList().block());
+        assertEquals(2, resources.findAll(org, null, null, null, null, null, Presence.PRESENT, cutoff, 2).count().block());
+        assertEquals(5, resources.findAll(org, null, null, null, null, null, Presence.PRESENT, cutoff, 50).count().block());
+        assertEquals(List.of("i-gone"), resources.findAll(org, null, null, null, null, null, Presence.GONE, cutoff, 2).map(CloudResource::getExternalId).collectList().block());
     }
 
     @Test

@@ -11,6 +11,7 @@ import com.mongodb.reactivestreams.client.MongoCollection;
 import com.thinklab.domain.exception.DuplicateResourceException;
 import com.thinklab.domain.model.CloudResource;
 import com.thinklab.domain.model.CloudResource.Kind;
+import com.thinklab.domain.model.CloudResource.Presence;
 import com.thinklab.domain.model.CloudResource.Provider;
 import com.thinklab.domain.model.CloudResource.State;
 import com.thinklab.domain.repository.CloudResourceRepository;
@@ -25,6 +26,7 @@ import org.bson.conversions.Bson;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -100,7 +102,8 @@ public class CloudResourceMongoRepositoryAdapter implements CloudResourceReposit
     }
 
     @Override
-    public Flux<CloudResource> findAll(UUID organisationId, UUID accountId, Provider provider, Kind kind, String region, State state, int limit) {
+    public Flux<CloudResource> findAll(UUID organisationId, UUID accountId, Provider provider, Kind kind, String region, State state, Presence presence, Instant missingBefore,
+                                       int limit) {
         List<Bson> filters = new ArrayList<>();
         filters.add(Filters.eq(FIELD_ORGANISATION, organisationId));
         if (accountId != null) {
@@ -117,6 +120,12 @@ public class CloudResourceMongoRepositoryAdapter implements CloudResourceReposit
         }
         if (state != null) {
             filters.add(Filters.eq("state", state.name()));
+        }
+        if (presence == Presence.GONE) {
+            filters.add(Filters.eq("state", State.TERMINATED.name()));
+        } else if (presence != null) {
+            filters.add(Filters.ne("state", State.TERMINATED.name()));
+            filters.add(presence == Presence.MISSING ? Filters.lt("lastSeenAt", missingBefore) : Filters.gte("lastSeenAt", missingBefore));
         }
         return Flux.from(getCollection().find(Filters.and(filters)).sort(Sorts.descending("lastSeenAt")).limit(limit)).map(CloudResourcePersistenceMapper::toDomain);
     }

@@ -17,7 +17,7 @@ import java.util.UUID;
 
 /**
  * Use Case for listing the tenant's resources, most recently seen first, filterable by account, provider, kind, region, state and how they are
- * judged (BIAN Behavior Qualifier: {@code retrieve}, collection). Presence is judged when read, so it is filtered in memory (ADR-032); at most
+ * judged (BIAN Behavior Qualifier: {@code retrieve}, collection). Presence is judged when read (ADR-032) and filtered in the store, so the limit applies to what was asked for; at most
  * {@link #MAX_LIMIT} resources (100 unless asked).
  */
 @Singleton
@@ -39,9 +39,7 @@ public class RetrieveResourcesUseCase {
         log.info("[USE CASE] Retrieving the CloudResources of organisation: {}", organisationId);
         int cap = limit == null ? DEFAULT_LIMIT : Math.max(1, Math.min(limit, MAX_LIMIT));
         return Mono.fromRunnable(() -> InventoryAccess.requireStaff(role, "list resources"))
-                .thenMany(Flux.defer(() -> repository.findAll(organisationId, accountId, provider, kind, region, state, presence == null ? cap : MAX_LIMIT)))
-                .map(resource -> InventoryMapper.toResponse(resource, judge.presenceOf(resource)))
-                .filter(response -> presence == null || response.presence().equals(presence.name()))
-                .take(cap);
+                .thenMany(Flux.defer(() -> repository.findAll(organisationId, accountId, provider, kind, region, state, presence, judge.missingBefore(), cap)))
+                .map(resource -> InventoryMapper.toResponse(resource, judge.presenceOf(resource)));
     }
 }
