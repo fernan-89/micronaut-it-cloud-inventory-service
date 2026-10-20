@@ -117,6 +117,20 @@ class CloudInventoryUseCasesTest {
     }
 
     @Test
+    @DisplayName("a resource seen again after being missing is marked changed, so a consumer of its promise sees that it came back; one seen lately is not")
+    void reappearing() {
+        CloudResource missing = stored(NOW.minusSeconds(100 * 3600L), State.RUNNING);
+        CloudResource fresh = stored(NOW.minusSeconds(3600), State.RUNNING);
+        when(repository.findByKey(org, Provider.AWS, account, ARN)).thenReturn(Mono.just(missing), Mono.just(fresh));
+
+        StepVerifier.create(report.execute(org, request(State.RUNNING), "discovery", STAFF)).expectNextCount(1).verifyComplete();
+        StepVerifier.create(report.execute(org, request(State.RUNNING), "discovery", STAFF)).expectNextCount(1).verifyComplete();
+
+        assertEquals(NOW, missing.getUpdatedAt());
+        assertEquals(NOW.minusSeconds(3600), fresh.getUpdatedAt());
+    }
+
+    @Test
     @DisplayName("two tools reporting the same new resource at once end with one: the loser of the insert restates the stored one")
     void reportsRace() {
         CloudResource winner = stored(NOW.minusSeconds(5), State.RUNNING);

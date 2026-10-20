@@ -118,6 +118,26 @@ public class CloudResource {
         return now.isAfter(lastSeenAt.plus(staleAfter)) ? Presence.MISSING : Presence.PRESENT;
     }
 
+    /**
+     * Whether the resource's promise is being kept (platform ADR-001), given how it is judged: broken ({@code CLOUD_RESOURCE_MISSING}) when the tool has not seen it
+     * for too long; kept when seen lately, and also when the tool said it was terminated (removed on purpose: an alert about its absence is settled).
+     */
+    public static Promise promise(Presence presence) {
+        return presence == Presence.MISSING ? Promise.broken("CLOUD_RESOURCE_MISSING") : Promise.kept();
+    }
+
+    /** What the registry says the resource's status is for a consumer: {@code TERMINATED} once the tool said so, {@code ACTIVE} otherwise. */
+    public String promiseStatus() {
+        return state == State.TERMINATED ? "TERMINATED" : "ACTIVE";
+    }
+
+    /** The resource changed at that moment without its description changing: it was seen again after being missing, which is what settles the promise. */
+    public void markChanged(Instant now) {
+        if (now.isAfter(updatedAt)) {
+            this.updatedAt = now;
+        }
+    }
+
     // --- Internal helpers ---
 
     private static void requireExecutor(String executor) {

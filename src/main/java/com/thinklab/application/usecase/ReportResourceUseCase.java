@@ -5,6 +5,7 @@ import com.thinklab.application.dto.response.ResourceResponse;
 import com.thinklab.application.mapper.InventoryMapper;
 import com.thinklab.domain.exception.DuplicateResourceException;
 import com.thinklab.domain.model.CloudResource;
+import com.thinklab.domain.model.CloudResource.Presence;
 import com.thinklab.domain.port.HashServicePort;
 import com.thinklab.domain.repository.CloudResourceRepository;
 import io.micronaut.context.annotation.Property;
@@ -62,7 +63,12 @@ public class ReportResourceUseCase {
 
     private Mono<Stored> restate(CloudResource resource, ReportResourceRequest request) {
         return Mono.fromRunnable(() -> {
-                    resource.restate(request.name(), request.kind(), request.region(), request.state(), request.tags(), Instant.now(clock));
+                    Instant now = Instant.now(clock);
+                    boolean wasMissing = judge.presenceOf(resource) == Presence.MISSING;
+                    resource.restate(request.name(), request.kind(), request.region(), request.state(), request.tags(), now);
+                    if (wasMissing) {
+                        resource.markChanged(now);
+                    }
                     resource.expireAfter(terminatedRetention);
                 })
                 .then(Mono.defer(() -> repository.save(resource)))

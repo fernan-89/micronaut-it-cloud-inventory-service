@@ -102,6 +102,12 @@ public class CloudResourceMongoRepositoryAdapter implements CloudResourceReposit
     }
 
     @Override
+    public Flux<CloudResource> findChangedSince(UUID organisationId, Instant since, int limit) {
+        return Flux.from(getCollection().find(Filters.and(Filters.eq(FIELD_ORGANISATION, organisationId), Filters.gte("updatedAt", since))).sort(Sorts.descending("updatedAt")).limit(limit))
+                .map(CloudResourcePersistenceMapper::toDomain);
+    }
+
+    @Override
     public Flux<CloudResource> findAll(UUID organisationId, UUID accountId, Provider provider, Kind kind, String region, State state, Presence presence, Instant missingBefore,
                                        int limit) {
         List<Bson> filters = new ArrayList<>();

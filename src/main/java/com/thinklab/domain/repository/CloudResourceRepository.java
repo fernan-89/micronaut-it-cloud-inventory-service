@@ -32,6 +32,9 @@ public interface CloudResourceRepository {
      */
     Flux<CloudResource> findAll(UUID organisationId, UUID accountId, Provider provider, Kind kind, String region, State state, Presence presence, Instant missingBefore, int limit);
 
+    /** The tenant's resources last changed at or after that moment (the description changed, or it reappeared after being missing), most recently changed first, at most {@code limit}. */
+    Flux<CloudResource> findChangedSince(UUID organisationId, Instant since, int limit);
+
     default Flux<CloudResource> findAll(UUID organisationId, UUID accountId, Provider provider, Kind kind, String region, State state, int limit) {
         return findAll(organisationId, accountId, provider, kind, region, state, null, null, limit);
     }

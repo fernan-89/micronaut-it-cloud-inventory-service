@@ -151,6 +151,21 @@ class CloudInventoryPersistenceIT implements TestPropertyProvider {
     }
 
     @Test
+    @DisplayName("the resources changed since a moment are the tenant's, most recently changed first, and the limit applies")
+    void changedSince() {
+        UUID org = UUID.randomUUID();
+        UUID account = UUID.randomUUID();
+        resources.create(newResource(org, account, Provider.AWS, "i-old", Kind.COMPUTE, "us-east-1", State.RUNNING, T0.minus(Duration.ofDays(60)))).block();
+        resources.create(newResource(org, account, Provider.AWS, "i-new", Kind.COMPUTE, "us-east-1", State.RUNNING, T0)).block();
+        resources.create(newResource(org, account, Provider.AWS, "i-newer", Kind.COMPUTE, "us-east-1", State.RUNNING, T0.plusSeconds(60))).block();
+        resources.create(newResource(UUID.randomUUID(), account, Provider.AWS, "i-other", Kind.COMPUTE, "us-east-1", State.RUNNING, T0.plusSeconds(120))).block();
+
+        assertEquals(List.of("i-newer", "i-new"), resources.findChangedSince(org, T0.minus(Duration.ofDays(1)), 10).map(CloudResource::getExternalId).collectList().block());
+        assertEquals(List.of("i-newer"), resources.findChangedSince(org, T0.minus(Duration.ofDays(1)), 1).map(CloudResource::getExternalId).collectList().block());
+        assertEquals(3, resources.findChangedSince(org, T0.minus(Duration.ofDays(90)), 10).count().block());
+    }
+
+    @Test
     @DisplayName("the unique key, the list index and the expiry (TTL) index that counts from purgeAt exist")
     void indexes() {
         List<Document> indexes = Flux.from(mongoClient.getDatabase(DATABASE).getCollection("cloud_resources").listIndexes()).collectList().block();

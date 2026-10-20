@@ -1,8 +1,10 @@
 package com.thinklab.infrastructure.adapter.in.web;
 
 import com.thinklab.application.dto.request.ReportResourceRequest;
+import com.thinklab.application.dto.response.PromiseResponse;
 import com.thinklab.application.dto.response.ResourceResponse;
 import com.thinklab.application.dto.response.ResourceSummaryResponse;
+import com.thinklab.application.usecase.RetrievePromisesUseCase;
 import com.thinklab.application.usecase.ReportResourceUseCase;
 import com.thinklab.application.usecase.RetrieveResourceSummaryUseCase;
 import com.thinklab.application.usecase.RetrieveResourceUseCase;
@@ -52,8 +54,12 @@ public class CloudInventoryController {
     private final RetrieveResourcesUseCase retrieveResources;
     private final RetrieveResourceSummaryUseCase retrieveSummary;
 
+    private final RetrievePromisesUseCase retrievePromises;
+
     public CloudInventoryController(ReportResourceUseCase reportResource, RetrieveResourceUseCase retrieveResource, RetrieveResourcesUseCase retrieveResources,
-                                    RetrieveResourceSummaryUseCase retrieveSummary) {
+                                    RetrieveResourceSummaryUseCase retrieveSummary,
+            RetrievePromisesUseCase retrievePromises) {
+        this.retrievePromises = retrievePromises;
         this.reportResource = reportResource;
         this.retrieveResource = retrieveResource;
         this.retrieveResources = retrieveResources;
@@ -85,6 +91,16 @@ public class CloudInventoryController {
                                                     @QueryValue @Nullable String region, @QueryValue @Nullable State state, @QueryValue @Nullable Presence presence,
                                                     @QueryValue @Nullable Integer limit) {
         return Mono.defer(() -> retrieveResources.execute(UUID.fromString(tenantId), accountId, provider, kind, region, state, presence, limit, role).collectList());
+    }
+
+    /**
+     * Behavior Qualifier: {@code promises/retrieve} (platform ADR-001, the promises contract). Every broken promise and every one that changed within the days asked
+     * (30 unless asked, 1 to 365), at most {@code limit} of each (500 unless asked, at most 1000).
+     */
+    @Get("/promises/retrieve")
+    public Mono<List<PromiseResponse>> promises(@Header(TENANT_HEADER) @NotBlank String tenantId, @Header(ROLE_HEADER) @Nullable String role,
+                                                @QueryValue @Nullable Integer changedWithinDays, @QueryValue @Nullable Integer limit) {
+        return Mono.defer(() -> retrievePromises.execute(UUID.fromString(tenantId), changedWithinDays, limit, role));
     }
 
     /** Behavior Qualifier: {@code summary/retrieve}. How many resources, by provider, kind, state and presence. */
