@@ -6,6 +6,8 @@ import com.thinklab.application.dto.response.ResourceSummaryResponse;
 import com.thinklab.application.usecase.ReportResourceUseCase;
 import com.thinklab.application.usecase.ReportResourceUseCase.Reported;
 import com.thinklab.application.usecase.RetrieveResourceSummaryUseCase;
+import com.thinklab.application.usecase.RetrievePromisesUseCase;
+import com.thinklab.application.dto.response.PromiseResponse;
 import com.thinklab.application.usecase.RetrieveResourceUseCase;
 import com.thinklab.application.usecase.RetrieveResourcesUseCase;
 import com.thinklab.domain.model.CloudResource.Kind;
@@ -23,6 +25,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -44,9 +47,10 @@ class CloudInventoryControllerTest {
     @Mock private RetrieveResourceUseCase retrieveResource;
     @Mock private RetrieveResourcesUseCase retrieveResources;
     @Mock private RetrieveResourceSummaryUseCase retrieveSummary;
+    @Mock private RetrievePromisesUseCase retrievePromises;
 
     private CloudInventoryController controller() {
-        return new CloudInventoryController(reportResource, retrieveResource, retrieveResources, retrieveSummary);
+        return new CloudInventoryController(reportResource, retrieveResource, retrieveResources, retrieveSummary, retrievePromises);
     }
 
     private ResourceResponse response() {
@@ -75,5 +79,13 @@ class CloudInventoryControllerTest {
         StepVerifier.create(controller().retrieveAll(tenantHeader, ROLE, accountId, Provider.AWS, Kind.COMPUTE, "us-east-1", State.RUNNING, Presence.PRESENT, 10))
                 .assertNext(l -> assertEquals(1, l.size())).verifyComplete();
         StepVerifier.create(controller().summary(tenantHeader, ROLE, Provider.AZURE)).assertNext(s -> assertEquals(0, s.total())).verifyComplete();
+    }
+
+    @Test
+    @DisplayName("the promises route passes the tenant, the role and the two parameters (platform ADR-001)")
+    void promises() {
+        when(retrievePromises.execute(tenant, 7, 50, ROLE)).thenReturn(Mono.just(List.of(new PromiseResponse(UUID.randomUUID(), "web-1", null, "KEPT", null, "ACTIVE", now))));
+
+        StepVerifier.create(controller().promises(tenantHeader, ROLE, 7, 50)).assertNext(promises -> assertEquals(1, promises.size())).verifyComplete();
     }
 }

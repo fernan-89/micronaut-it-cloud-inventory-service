@@ -214,4 +214,19 @@ class CloudResourceMongoAdapterTest {
         String gone = filter.getAllValues().get(2).toString();
         assertTrue(gone.contains("TERMINATED") && !gone.contains("$ne") && !gone.contains("lastSeenAt"));
     }
+
+    @Test
+    @DisplayName("the resources changed since a moment are the tenant's, updated at or after it, most recently changed first and limited")
+    void changedSince() {
+        FindPublisher<CloudResourceDocument> publisher = finds(resource());
+        CloudResourceMongoRepositoryAdapter adapter = new CloudResourceMongoRepositoryAdapter(client, URI);
+
+        StepVerifier.create(adapter.findChangedSince(tenant, Instant.parse("2026-10-01T00:00:00Z"), 7)).expectNextCount(1).verifyComplete();
+
+        ArgumentCaptor<Bson> filter = ArgumentCaptor.forClass(Bson.class);
+        verify(collection).find(filter.capture());
+        String text = filter.getValue().toString();
+        assertTrue(text.contains("organisationId") && text.contains("updatedAt") && text.contains("$gte"));
+        verify(publisher).limit(7);
+    }
 }

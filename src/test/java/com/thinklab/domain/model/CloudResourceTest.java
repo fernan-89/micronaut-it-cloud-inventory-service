@@ -170,4 +170,29 @@ class CloudResourceTest {
         assertThrows(IllegalArgumentException.class, () -> CloudResource.reconstitute(x, org, account, Provider.AWS, ARN, "n", Kind.COMPUTE, null, State.RUNNING, null, T0, T0, T0, null));
         assertThrows(IllegalArgumentException.class, () -> CloudResource.reconstitute(x, org, account, Provider.AWS, ARN, "n", Kind.COMPUTE, "r1", null, null, T0, T0, T0, null));
     }
+
+    @Test
+    @DisplayName("the promise is broken (CLOUD_RESOURCE_MISSING) when the resource is missing, and kept when present or gone; its status is TERMINATED once terminated (platform ADR-001)")
+    void promise() {
+        assertEquals(Promise.broken("CLOUD_RESOURCE_MISSING"), CloudResource.promise(Presence.MISSING));
+        assertEquals(Promise.kept(), CloudResource.promise(Presence.PRESENT));
+        assertEquals(Promise.kept(), CloudResource.promise(Presence.GONE));
+        assertEquals("ACTIVE", resource().promiseStatus());
+        CloudResource terminated = resource();
+        terminated.restate("web-1", Kind.COMPUTE, "us-east-1", State.TERMINATED, null, T0.plusSeconds(60));
+        assertEquals("TERMINATED", terminated.promiseStatus());
+        assertEquals(Promise.Verdict.BROKEN, Promise.broken("X").verdict());
+        assertEquals("X", Promise.broken("X").code());
+    }
+
+    @Test
+    @DisplayName("seen again after being missing it changed, though nothing in its description did; the moment only moves forward")
+    void markChanged() {
+        CloudResource resource = resource();
+
+        resource.markChanged(T0.plusSeconds(3600));
+        assertEquals(T0.plusSeconds(3600), resource.getUpdatedAt());
+        resource.markChanged(T0.plusSeconds(60));
+        assertEquals(T0.plusSeconds(3600), resource.getUpdatedAt());
+    }
 }
